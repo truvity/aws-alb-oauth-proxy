@@ -29,6 +29,7 @@ def clean_response_headers(request: web.Request) -> CIMultiDictProxy:
     except KeyError:
         pass
     else:
+        clean_headers.popall(auth_header[0], None)
         clean_headers.add(*auth_header)
     return CIMultiDictProxy(clean_headers)
 
@@ -47,7 +48,17 @@ async def _instance_document() -> Optional[str]:
     .. _#3628: https://github.com/aio-libs/aiohttp/issues/3628
     .. _PR #3640: https://github.com/aio-libs/aiohttp/pull/3640
     """
-    async with aiohttp.ClientSession(raise_for_status=True, timeout=aiohttp.ClientTimeout(total=1)) as session:
+    token = ""
+    headers = {"x-aws-ec2-metadata-token-ttl-seconds": "21600"}
+    async with aiohttp.ClientSession(raise_for_status=True, timeout=aiohttp.ClientTimeout(total=1), headers=headers) as session:
+        try:
+            async with session.put("http://169.254.169.254/latest/api/token") as response:
+                token = await response.text().strip()
+        except TimeoutError:
+            logger.debug("Timeout while attempting to get IMDS token")
+            
+    token_header = {"x-aws-ec2-metadata-token", token}
+    async with aiohttp.ClientSession(raise_for_status=True, timeout=aiohttp.ClientTimeout(total=1), headers=token_header) as session:
         try:
             async with session.get("http://169.254.169.254/latest/dynamic/instance-identity/document") as response:
                 document = await response.text()
