@@ -53,7 +53,7 @@ async def _instance_document() -> Optional[str]:
     async with aiohttp.ClientSession(raise_for_status=True, timeout=aiohttp.ClientTimeout(total=1), headers=headers) as session:
         try:
             async with session.put("http://169.254.169.254/latest/api/token") as response:
-                token = await response.text().strip()
+                token = (await response.text()).strip()
         except TimeoutError:
             logger.debug("Timeout while attempting to get IMDS token")
             
