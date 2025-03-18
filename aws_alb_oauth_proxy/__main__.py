@@ -3,11 +3,11 @@ import argparse
 import logging
 import sys
 from concurrent.futures.process import ProcessPoolExecutor
+from os import getenv
 
 from aiohttp import web
 from prometheus_client import start_http_server
 
-from helpers import _aws_region
 from server import Proxy
 
 # Command line arguments
@@ -48,9 +48,9 @@ logging.basicConfig(
 
 # Actual work
 
-region = _aws_region()
-if not region and not ignore_auth:
-    logger.error("Could not detect AWS region. Are we running on AWS?")
+region = getenv("AWS_REGION")
+if not region:
+    logger.error("Could not detect AWS region. Did you set the AWS_REGION env var?")
     sys.exit(1)
 
 logger.info(f"Upstream:     {upstream}")
